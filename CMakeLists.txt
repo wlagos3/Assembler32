@@ -3,7 +3,7 @@ project(assembler C)
 
 set(CMAKE_C_STANDARD 11)
 
-add_executable(assembler main.c
-        instruction.c
-        instruction.h
+add_executable(assembler src/main.c
+        src/instruction/instruction.c
+        src/instruction/instruction.h
 )
