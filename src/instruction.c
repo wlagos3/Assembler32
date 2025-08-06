@@ -25,7 +25,6 @@ static const InstructionDef instruction_table[] = {
     {"sh", I_TYPE, 0x0B, 0x00},
     {"j", J_TYPE, 0x0C, 0x00},
     {"jal", J_TYPE, 0x0D, 0x00},
-    {NULL, R_TYPE, 0x00, 0x00},
 };
 
 static const InstructionDef *find_instruction(const char *name) {
@@ -177,7 +176,7 @@ static Instruction parse_j_type(const InstructionDef *def, char *tokens[], int t
 }
 
 Instruction parse_instruction(const char *line) {
-    Instruction inst = {0};
+    Instruction inst = {.type = -1};
     char buffer[256];
     strncpy(buffer, line, sizeof(buffer) - 1);
     buffer[sizeof(buffer) - 1] = '\0';
