@@ -3,9 +3,10 @@
 //
 
 #include "assembler.h"
+
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
 #define BUFFER_SIZE 1024
 
@@ -34,6 +35,7 @@ void assembler_destroy(Assembler *assembler) {
     if (assembler) {
         free(assembler->instructions);
         free(assembler->machine_code);
+        free(assembler->labels);
         free(assembler);
     }
 }
@@ -93,10 +95,8 @@ uint32_t i_type_to_machine_code(const ITypeInstruction *i_instr) {
 
 uint32_t j_type_to_machine_code(const JTypeInstruction *j_instr) {
     uint32_t machine_code = 0;
-
     machine_code |= (j_instr->opcode & 0x3F) << 26;
     machine_code |= (j_instr->address & 0x3FFFFFF);
-
     return machine_code;
 }
 
@@ -108,6 +108,21 @@ uint32_t *assembler_generate_machine_code(Assembler *assembler) {
     for (size_t i = 0; i < assembler->instruction_count; i++) {
         Instruction *instr = &assembler->instructions[i];
         uint32_t machine_code = 0;
+
+        if (strlen(instr->label_ref) > 0) {
+            int32_t label_line = assembler_find_label(assembler, instr->label_ref);
+            printf("Found label at: %d\n", label_line);
+            if (label_line < 0) {
+                return NULL;
+            }
+
+            if (instr->type == I_TYPE) {
+                int32_t offset = label_line - (int32_t) i - 1;
+                instr->data.i.immediate = (int16_t) offset;
+            } else if (instr->type == J_TYPE) {
+                instr->data.j.address = (uint32_t) label_line;
+            }
+        }
 
         switch (instr->type) {
             case R_TYPE:
@@ -218,4 +233,53 @@ void assembler_set_error(Assembler *assembler, InstructionValidateResult error, 
     } else {
         assembler->error_message[0] = '\0';
     }
+}
+
+bool assembler_add_label(Assembler *assembler, const char *name, uint32_t instruction_line) {
+    if (!assembler || !name) {
+        return false;
+    }
+
+    if (assembler->label_count >= BUFFER_SIZE) {
+        return false;
+    }
+
+    strncpy(assembler->labels[assembler->label_count].name, name,
+            sizeof(assembler->labels[assembler->label_count].name) - 1);
+    assembler->labels[assembler->label_count].name[sizeof(assembler->labels[assembler->label_count].name) - 1] = '\0';
+    assembler->labels[assembler->label_count].instruction_line = instruction_line;
+    assembler->label_count++;
+
+    return true;
+}
+
+int32_t assembler_find_label(const Assembler *assembler, const char *name) {
+    if (!assembler || !name) {
+        return -1;
+    }
+
+    for (uint32_t i = 0; i < assembler->label_count; i++) {
+        if (strcmp(assembler->labels[i].name, name) == 0) {
+            return (int32_t) assembler->labels[i].instruction_line;
+        }
+    }
+
+    return -1;
+}
+
+bool is_label_line(const char *line) {
+    if (!line) return false;
+    char *trimmed = (char *) line;
+    while (*trimmed == ' ' || *trimmed == '\t') trimmed++;
+    if (*trimmed == '\0' || *trimmed == '\n' || *trimmed == '#' || *trimmed == ';') {
+        return false;
+    }
+    char *colon = strchr(trimmed, ':');
+    if (!colon) return false;
+
+    for (char *p = trimmed; p < colon; p++) {
+        if (*p == ' ' || *p == '\t') return false;
+    }
+
+    return true;
 }

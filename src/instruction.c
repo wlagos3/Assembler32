@@ -1,6 +1,7 @@
 #include "instruction.h"
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 static const InstructionDef instruction_table[] = {
     {"add", R_TYPE, 0x00, 0x01},
@@ -39,10 +40,25 @@ static const InstructionDef *find_instruction(const char *name) {
 int is_valid_register(const char *reg) {
     if (reg[0] != '$') return 0;
 
+    if (reg[1] == 'v') {
+        char *endptr;
+        int num = strtol(reg + 2, &endptr, 10);
+        return *endptr == '\0' && num >= 0 && num <= 1;
+    }
+    if (reg[1] == 'a') {
+        char *endptr;
+        int num = strtol(reg + 2, &endptr, 10);
+        return *endptr == '\0' && num >= 0 && num <= 4;
+    }
     if (reg[1] == 'r') {
         char *endptr;
         int num = strtol(reg + 2, &endptr, 10);
-        return *endptr == '\0' && num >= 0 && num <= 28;
+        return *endptr == '\0' && num >= 0 && num <= 15;
+    }
+    if (reg[1] == 's') {
+        char *endptr;
+        int num = strtol(reg + 2, &endptr, 10);
+        return *endptr == '\0' && num >= 0 && num <= 4;
     }
 
     if (strcmp(reg, "$zero") == 0) return 1;
@@ -55,8 +71,22 @@ int is_valid_register(const char *reg) {
 int parse_register(const char *reg) {
     if (!is_valid_register(reg)) return -1;
 
+    if (reg[1] == 'v') {
+        const int v_offset = 1;
+        return strtol(reg + 2, NULL, 10) + v_offset;
+    }
+
+    if (reg[1] == 'a') {
+        const int a_offset = 3;
+        return strtol(reg + 2, NULL, 10) + a_offset;
+    }
     if (reg[1] == 'r') {
-        return strtol(reg + 2, NULL, 10);
+        const int r_offset = 9;
+        return strtol(reg + 2, NULL, 10) + r_offset;
+    }
+    if (reg[1] == 's') {
+        const int s_offset = 23;
+        return strtol(reg + 2, NULL, 10) + s_offset;
     }
 
     if (strcmp(reg, "$zero") == 0) return 0;
@@ -94,6 +124,23 @@ uint32_t parse_address(const char *addr) {
 
     if (*endptr != '\0') return 0;
     return (uint32_t) value;
+}
+
+bool is_label_reference(const char *token) {
+    if (!token) return false;
+
+    if (isdigit(token[0]) ||
+        (token[0] == '0' && (token[1] == 'x' || token[1] == 'b'))) {
+        return false;
+    }
+
+    for (const char *p = token; *p; p++) {
+        if (!isalnum(*p) && *p != '_') {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 static Instruction parse_r_type(const InstructionDef *def, char *tokens[], int token_count) {
@@ -137,7 +184,9 @@ static Instruction parse_i_type(const InstructionDef *def, char *tokens[], int t
             if (close_paren) *close_paren = '\0';
             inst.data.i.rs = parse_register(reg_start);
         }
-    } else if (strcmp(def->name, "beq") == 0 || strcmp(def->name, "bne") == 0) {
+    } else if (strcmp(def->name, "beq") == 0 || strcmp(def->name, "bneq") == 0 ||
+               strcmp(def->name, "bltz") == 0 || strcmp(def->name, "bgtz") == 0 ||
+               strcmp(def->name, "blt") == 0 || strcmp(def->name, "bgt") == 0) {
         if (token_count != 4) {
             inst.type = I_TYPE;
             return inst;
@@ -145,7 +194,15 @@ static Instruction parse_i_type(const InstructionDef *def, char *tokens[], int t
 
         inst.data.i.rs = parse_register(tokens[1]);
         inst.data.i.rt = parse_register(tokens[2]);
-        inst.data.i.immediate = parse_immediate(tokens[3]);
+
+        if (is_label_reference(tokens[3])) {
+            strncpy(inst.label_ref, tokens[3], sizeof(inst.label_ref) - 1);
+            inst.label_ref[sizeof(inst.label_ref) - 1] = '\0';
+            inst.data.i.immediate = 0;
+        } else {
+            inst.type = -1;
+            return inst;
+        }
     } else {
         if (token_count != 4) {
             inst.type = I_TYPE;
@@ -170,7 +227,13 @@ static Instruction parse_j_type(const InstructionDef *def, char *tokens[], int t
         return inst;
     }
 
-    inst.data.j.address = parse_address(tokens[1]);
+    if (is_label_reference(tokens[1])) {
+        strncpy(inst.label_ref, tokens[1], sizeof(inst.label_ref) - 1);
+        inst.label_ref[sizeof(inst.label_ref) - 1] = '\0';
+        inst.data.j.address = 0;
+    } else {
+        inst.data.j.address = parse_address(tokens[1]);
+    }
 
     return inst;
 }

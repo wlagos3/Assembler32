@@ -1,5 +1,6 @@
 #pragma once
 #include <stdint.h>
+#include <stdbool.h>
 
 typedef enum {
     R_TYPE,
@@ -30,6 +31,7 @@ typedef struct {
 
 typedef struct {
     InstructionType type;
+    char label_ref[256];
 
     union {
         RTypeInstruction r;
@@ -54,3 +56,5 @@ int parse_register(const char *reg);
 int16_t parse_immediate(const char *imm);
 
 uint32_t parse_address(const char *addr);
+
+bool is_label_reference(const char *token);

@@ -21,7 +21,7 @@ typedef enum {
 
 typedef struct {
     char name[256];
-    uint8_t line;
+    uint32_t instruction_line;
 } Label;
 
 typedef struct {
@@ -60,3 +60,9 @@ uint32_t j_type_to_machine_code(const JTypeInstruction *j_instr);
 const char *assembler_get_error_message(const Assembler *assembler);
 
 void assembler_set_error(Assembler *assembler, InstructionValidateResult error, const char *message);
+
+bool assembler_add_label(Assembler *assembler, const char *name, uint32_t instruction_line);
+
+int32_t assembler_find_label(const Assembler *assembler, const char *name);
+
+bool is_label_line(const char *line);
