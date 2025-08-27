@@ -24,8 +24,8 @@ static const InstructionDef instruction_table[] = {
     {"sw", I_TYPE, 0x09, 0x00},
     {"lh", I_TYPE, 0x0A, 0x00},
     {"sh", I_TYPE, 0x0B, 0x00},
-    {"j", J_TYPE, 0x0C, 0x00},
-    {"jal", J_TYPE, 0x0D, 0x00},
+    {"j", J_TYPE, 0xFF, 0x00},
+    {"jal", J_TYPE, 0xFE, 0x00},
 };
 
 static const InstructionDef *find_instruction(const char *name) {
