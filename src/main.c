@@ -25,8 +25,8 @@ char *instruction_to_binary(uint32_t instruction) {
 }
 
 int main(int argc, char *argv[]) {
-    if (argc < 3) {
-        printf("Usage: %s <assembly_file> <output_file>\n", argv[0]);
+    if (argc < 4) {
+        printf("Usage: %s <assembly_file> <output_file> <binary_output_file>\n", argv[0]);
         return 1;
     }
     FILE *assembly_source = fopen(argv[1], "r");
@@ -36,6 +36,11 @@ int main(int argc, char *argv[]) {
     }
     FILE *assembly_dest = fopen(argv[2], "w");
     if (!assembly_dest) {
+        printf("Failed to open output file: %s\n", argv[2]);
+        return 1;
+    }
+    FILE *binary_dest = fopen(argv[3], "w");
+    if (!binary_dest) {
         printf("Failed to open output file: %s\n", argv[2]);
         return 1;
     }
@@ -89,6 +94,7 @@ int main(int argc, char *argv[]) {
     fclose(assembly_source);
     if (error_count > 0) {
         printf("\nAssembly failed with %d errors\n", error_count);
+        printf("%s", assembler_get_error_message(assembler));
         assembler_destroy(assembler);
         return 1;
     }
@@ -101,7 +107,8 @@ int main(int argc, char *argv[]) {
             char *instruction_str = instruction_to_str(machine_code[i]);
             char *instruction_binary = instruction_to_binary(machine_code[i]);
             printf("%s\n", instruction_str);
-            fprintf(assembly_dest, "%s", instruction_binary);
+            fprintf(assembly_dest, "%s\n", instruction_str);
+            fprintf(binary_dest, "%s", instruction_binary);
             free(instruction_str);
         }
     } else {

@@ -177,7 +177,10 @@ static Instruction parse_i_type(const InstructionDef *def, char *tokens[], int t
         char *paren = strchr(tokens[2], '(');
         if (paren) {
             *paren = '\0';
-            inst.data.i.immediate = parse_immediate(tokens[2]);
+            int16_t imm = parse_immediate(tokens[2]);
+            if (imm % 4 != 0) return inst;
+            inst.data.i.immediate = imm;
+
 
             char *reg_start = paren + 1;
             char *close_paren = strchr(reg_start, ')');

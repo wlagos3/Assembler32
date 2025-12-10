@@ -152,7 +152,7 @@ bool assembler_validate_instruction(const Instruction *instruction) {
 
     switch (instruction->type) {
         case R_TYPE:
-            return assembler_validate_r_type(&instruction->data.r);
+            return !assembler_validate_r_type(&instruction->data.r); // change all of these to error enums
         case I_TYPE:
             return assembler_validate_i_type(&instruction->data.i);
         case J_TYPE:
@@ -162,24 +162,35 @@ bool assembler_validate_instruction(const Instruction *instruction) {
     }
 }
 
-bool assembler_validate_r_type(const RTypeInstruction *r_instr) {
+InstructionValidateResult assembler_validate_r_type(const RTypeInstruction *r_instr) {
     if (!r_instr) {
-        return false;
+        return ASSEMBLER_ERROR_NULL_POINTER;
     }
 
     if (r_instr->rs > 31 || r_instr->rt > 31 || r_instr->rd > 31) {
-        return false;
+        return ASSEMBLER_ERROR_INVALID_REGISTER;
     }
 
     if (r_instr->shamt > 31) {
-        return false;
+        return ASSEMBLER_ERROR_INVALID_OFFSET;
     }
 
     if (r_instr->opcode > 63 || r_instr->funct > 63) {
-        return false;
+        return ASSEMBLER_ERROR_INVALID_OPCODE;
     }
 
-    return true;
+    if (r_instr->opcode == 0x08 || r_instr->opcode == 0x09) {
+        if (r_instr->opcode % 4 != 0) {
+            return ASSEMBLER_ERROR_INVALID_ADDRESS;
+        }
+    }
+    if (r_instr->opcode == 0x0A || r_instr->opcode == 0x0B) {
+        if (r_instr->opcode % 2 != 0) {
+            return ASSEMBLER_ERROR_INVALID_ADDRESS;
+        }
+    }
+
+    return ASSEMBLER_SUCCESS;
 }
 
 bool assembler_validate_i_type(const ITypeInstruction *i_instr) {

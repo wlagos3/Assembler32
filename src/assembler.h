@@ -15,6 +15,8 @@ typedef enum {
     ASSEMBLER_ERROR_INVALID_IMMEDIATE,
     ASSEMBLER_ERROR_INVALID_ADDRESS,
     ASSEMBLER_ERROR_INVALID_LABEL,
+    ASSEMBLER_ERROR_INVALID_OFFSET,
+    ASSEMBLER_ERROR_INVALID_OPCODE,
     ASSEMBLER_ERROR_MEMORY_ALLOCATION,
     ASSEMBLER_ERROR_BUFFER_FULL,
 } InstructionValidateResult;
@@ -45,7 +47,7 @@ uint32_t *assembler_generate_machine_code(Assembler *assembler);
 
 bool assembler_validate_instruction(const Instruction *instruction);
 
-bool assembler_validate_r_type(const RTypeInstruction *r_instr);
+InstructionValidateResult assembler_validate_r_type(const RTypeInstruction *r_instr);
 
 bool assembler_validate_i_type(const ITypeInstruction *i_instr);
 
