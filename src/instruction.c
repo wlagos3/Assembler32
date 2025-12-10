@@ -24,6 +24,8 @@ static const InstructionDef instruction_table[] = {
     {"sw", I_TYPE, 0x09, 0x00},
     {"lh", I_TYPE, 0x0A, 0x00},
     {"sh", I_TYPE, 0x0B, 0x00},
+    {"lb", I_TYPE, 0x0D, 0x00},
+    {"sb", I_TYPE, 0x0E, 0x00},
     {"j", J_TYPE, 0xFF, 0x00},
     {"jal", J_TYPE, 0xFE, 0x00},
 };
@@ -167,7 +169,8 @@ static Instruction parse_i_type(const InstructionDef *def, char *tokens[], int t
     inst.type = I_TYPE;
     inst.data.i.opcode = def->opcode;
 
-    if (strcmp(def->name, "lw") == 0 || strcmp(def->name, "sw") == 0) {
+    if (strcmp(def->name, "lw") == 0 || strcmp(def->name, "sw") == 0 || strcmp(def->name, "lh") == 0 ||
+        strcmp(def->name, "sh") == 0 || strcmp(def->name, "lb") == 0 || strcmp(def->name, "sb") == 0) {
         if (token_count != 3) {
             return inst;
         }
